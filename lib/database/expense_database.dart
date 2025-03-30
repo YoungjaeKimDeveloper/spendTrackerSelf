@@ -16,12 +16,16 @@ class ExpenseDatabase extends ChangeNotifier {
     isar = await Isar.open([ExpenseSchema], directory: dir.path);
   }
 
+  // 반환값 get => allExpense
+  List<Expense> get allExpenses => _allExpenses;
   // Create
   Future<void> createExpense(Expense newExpense) async {
     await isar.writeTxn(() async {
       // 데이터 베이스에 넣어주기
       await isar.expenses.put(newExpense);
     });
+    // Tester
+    print("Database Has been created");
     // 새로 변경될때마다 값 다시읽어주기 - UI 변경
     readExpense();
   }
@@ -54,6 +58,7 @@ class ExpenseDatabase extends ChangeNotifier {
     List<Expense> fetchedExpenses = await isar.expenses.where().findAll();
     _allExpenses.clear();
     _allExpenses.addAll(fetchedExpenses);
+    // UI업데이트
     notifyListeners();
   }
 }
