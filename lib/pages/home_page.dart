@@ -27,6 +27,7 @@ class _HomePageState extends State<HomePage> {
   TextEditingController titleController = TextEditingController();
   // Amount Controller
   TextEditingController amountController = TextEditingController();
+  // New Expenses
   void openExpenseBox() {
     showDialog(
       context: context,
@@ -52,6 +53,54 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
+  // Delete Expenses  - Expense 지워주기
+  void openDeleteBox(Expense expense) {
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: Text("Do you want to delete the expense?"),
+          content: Column(mainAxisSize: MainAxisSize.min, children: [
+              
+            ],
+          ),
+          actions: [cancelBtn(), deleteBtn(expense)],
+        );
+      },
+    );
+  }
+
+  // Edit Box
+  void openEditBox(Expense expense) {
+    // pre-fill existing values into textfields
+    // 필드 최대한 깔끔하게 유지하기
+    String existingName = expense.title;
+    String existingAmount = expense.amount.toString();
+
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: Text("Edit Expense"),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(
+                decoration: InputDecoration(hintText: existingName),
+                controller: titleController,
+              ),
+              TextField(
+                decoration: InputDecoration(hintText: existingAmount),
+                controller: amountController,
+              ),
+            ],
+          ),
+          actions: [cancelBtn(), editBtn(expense)],
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Consumer<ExpenseDatabase>(
@@ -66,7 +115,11 @@ class _HomePageState extends State<HomePage> {
             itemCount: value.allExpenses.length,
             itemBuilder: (BuildContext context, int index) {
               Expense individualExpense = value.allExpenses[index];
-              return CustomListTitle(individualExpense: individualExpense);
+              return CustomListTitle(
+                individualExpense: individualExpense,
+                onEditPress: (context) => openEditBox(individualExpense),
+                onDeletePress: (context) => openDeleteBox(individualExpense),
+              );
             },
           ),
         );
@@ -74,6 +127,7 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
+  // Buttons
   // Create new Expense
   Widget createBtn() {
     return MaterialButton(
@@ -99,13 +153,59 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
+  Widget editBtn(Expense expense) {
+    return TextButton(
+      onPressed: () async {
+        if (titleController.text.isNotEmpty &&
+            amountController.text.isNotEmpty) {
+          // 팝업창 당아주기 - UI
+          Navigator.pop(context);
+          // Create a new Expense
+          Expense updatedExpense = Expense(
+            titleController.text.isNotEmpty
+                ? titleController.text
+                : expense.title,
+            amountController.text.isNotEmpty
+                ? convertStringToDouble(amountController.text)
+                : expense.amount,
+            DateTime.now(),
+          );
+          // 데이터베이스에 저장 -  Database
+          await context.read<ExpenseDatabase>().updateExpense(
+            expense.id,
+            updatedExpense,
+          );
+          // Controller 초기화 - UI -
+          titleController.clear();
+          amountController.clear();
+        }
+      },
+      child: Text("Edit"),
+    );
+  }
+
   Widget cancelBtn() {
     return TextButton(
       onPressed: () {
-        // 현재의 위치에서 상태를닫겠다?
+        // 현재의 위치에서 상태를닫음
         Navigator.pop(context);
+        // Text Controller 초기화
+        titleController.clear();
+        amountController.clear();
       },
       child: Text("No"),
+    );
+  }
+
+  Widget deleteBtn(Expense expense) {
+    return TextButton(
+      onPressed: () {
+        // 창 먼저 닫아주기
+        Navigator.pop(context);
+        // Provider통해서 id찾아서 Expense지워주기
+        context.read<ExpenseDatabase>().deleteExpense(expense);
+      },
+      child: Text("Delete"),
     );
   }
 }

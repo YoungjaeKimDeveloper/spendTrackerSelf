@@ -48,6 +48,9 @@ class ExpenseDatabase extends ChangeNotifier {
       // 데이터 베이스에서 업데이트해주기
       await isar.expenses.put(updateExpense); // insert & update
     });
+
+    print("Database Updated!");
+    print(updateExpense);
     // 새로 변경될때마다 값 다시읽어주기 - UI 변경
     readExpense();
   }
